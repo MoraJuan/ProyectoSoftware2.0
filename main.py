@@ -1,11 +1,13 @@
-# main.py
-import sys
-import os
+# Import
 import flet
-from flet import Page, Text, ElevatedButton
-from sqlalchemy.orm import sessionmaker
-from database.connection import Base, engine, SessionLocal
-from models import Customer, CommercialInvoice, User, Administrator, Employee, Product, Stock, Supplier
+from flet import Container, Page, Text, alignment
+from database.connection import Base, SessionLocal, engine
+
+from pages import PageHome, PageSupplier
+
+#! Base de datos
+#? from sqlalchemy.orm import sessionmaker
+#? from models import (Administrator, CommercialInvoice, Customer, Employee, Product, Stock, Supplier, User)
 
 # Crear todas las tablas en la base de datos
 Base.metadata.create_all(engine)
@@ -14,26 +16,25 @@ Base.metadata.create_all(engine)
 session = SessionLocal()
 
 def main(page: Page):
-    # Agregar un Cliente de muestra si no existe
-    cliente = session.query(Customer).first()
-    if not cliente:
-        nuevo_cliente = Customer(name='Juan Perez', email='juan.perez@example.com')
-        session.add(nuevo_cliente)
-        session.commit()
-        cliente = nuevo_cliente
-    
-    # Mostrar el Cliente
-    page.add(Text(f"Cliente: {cliente.name}, Email: {cliente.email}"))
-    
-    # Botón para refrescar datos
-    def refresh(e):
-        cliente = session.query(Customer).first()
-        page.controls.clear()
-        page.add(Text(f"Cliente: {cliente.name}, Email: {cliente.email}"))
-        page.add(ElevatedButton("Refresh", on_click=refresh))
+    # Definir las rutas
+    def route_change(route):
+        page.clean()
+        if page.route == "/":
+            PageHome.PageHome(page)
+        elif page.route == "/realizar_venta":
+            page.add(Container(content=Text("Pantalla para realizar ventas"), alignment=alignment.center))
+        elif page.route == "/ver_productos":
+            page.add(Container(content=Text("Pantalla para ver productos"), alignment=alignment.center))
+        elif page.route == "/ver_proveedores":
+            PageSupplier(page)
+        elif page.route == "/ver_compradores":
+            page.add(Container(content=Text("Pantalla para ver compradores"), alignment=alignment.center))
+        elif page.route == "/ver_ventas":
+            page.add(Container(content=Text("Pantalla para ver ventas"), alignment=alignment.center))
         page.update()
-    
-    page.add(ElevatedButton("Refresh", on_click=refresh))
+
+    page.on_route_change = route_change
+    page.go(page.route)
 
 if __name__ == "__main__":
     flet.app(target=main)

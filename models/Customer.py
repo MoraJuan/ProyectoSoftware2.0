@@ -7,7 +7,7 @@ class Customer(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False)
-    commercialInvoice = relationship('CommercialInvoice', back_populates='customer')
-    
+    commercial_invoice = relationship('CommercialInvoice', back_populates='customer')
+
     def __repr__(self):
         return f"Cliente(nombre={self.name})"

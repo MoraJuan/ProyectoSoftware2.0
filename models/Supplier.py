@@ -7,4 +7,5 @@ class Supplier(Base):
     name = Column(String, nullable=False)
     phone = Column(String)
     email = Column(String, unique=True, nullable=False)
+    address = Column(String, unique=True, nullable=False)
     description = Column(String)

@@ -1,9 +1,9 @@
 # Import
 import flet
 from flet import Container, Page, Text, alignment
-from database.connection import Base, SessionLocal, engine
 
-from pages import PageHome, PageSupplier
+from database.connection import Base, SessionLocal, engine
+from pages import PageHome, PageProduct, PageSupplier, PageSupplierForm
 
 #! Base de datos
 #? from sqlalchemy.orm import sessionmaker
@@ -24,9 +24,13 @@ def main(page: Page):
         elif page.route == "/realizar_venta":
             page.add(Container(content=Text("Pantalla para realizar ventas"), alignment=alignment.center))
         elif page.route == "/ver_productos":
-            page.add(Container(content=Text("Pantalla para ver productos"), alignment=alignment.center))
+            PageProduct.PageProduct(page, session)
         elif page.route == "/ver_proveedores":
-            PageSupplier(page)
+            PageSupplier.PageSupplier(page, session)
+        elif page.route == "/agregar_proveedor":
+            PageSupplierForm.PageSupplierForm(page, session, edit_mode=False)
+        elif page.route == "/editar_proveedor":
+            PageSupplierForm.PageSupplierForm(page, session, edit_mode=True)
         elif page.route == "/ver_compradores":
             page.add(Container(content=Text("Pantalla para ver compradores"), alignment=alignment.center))
         elif page.route == "/ver_ventas":

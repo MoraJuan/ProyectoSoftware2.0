@@ -1,130 +1,133 @@
+
+#? Importaciones
 import flet as ft
+from sqlalchemy.orm import Session
 from services.supplierService import SupplierService
 from ui.components.alerts import show_success_message, show_error_message
 
-def PageSupplierForm(page: ft.Page, session, edit_mode=False):
-    page.title = "Agregar Proveedor" if not edit_mode else "Editar Proveedor"
-    supplier_service = SupplierService(session)
+
+class PageSupplierForm:
+    def __init__(self, page: ft.Page, session: Session, edit_mode=False):
+        self.page = page
+        self.session = session
+        self.edit_mode = edit_mode
+        self.supplier_service = SupplierService(session)
+        self.page.title = "Agregar Proveedor" if not edit_mode else "Editar Proveedor"
+        self.build_ui()
     
-    # Campos del formulario
-    name_field = ft.TextField(
-        label="Nombre",
-        width=300,
-        autofocus=True,
-        required=True
-    )
-    email_field = ft.TextField(
-        label="Email",
-        width=300,
-        required=True
-    )
-    phone_field = ft.TextField(
-        label="Teléfono",
-        width=300,
-        required=True
-    )
-    address_field = ft.TextField(
-        label="Dirección",
-        width=300,
-        required=True
-    )
+    #! Crea la vista de PageSupplier
+    def build_ui(self):
+        self.name_field = ft.TextField(
+            label="Nombre", width=300, autofocus=True)
+        self.email_field = ft.TextField(
+            label="Email", width=300)
+        self.phone_field = ft.TextField(
+            label="Teléfono", width=300)
+        self.address_field = ft.TextField(
+            label="Dirección", width=300)
 
-    def load_supplier_data():
-        """Carga los datos del proveedor si estamos en modo edición"""
-        if edit_mode:
-            supplier_id = page.client_storage.get("edit_supplier_id")
+        self.cancel_button = ft.ElevatedButton(
+            text="Cancelar",
+            icon=ft.icons.CANCEL,
+            on_click=self.go_back
+        )
+        self.save_button = ft.ElevatedButton(
+            text="Guardar",
+            icon=ft.icons.SAVE,
+            on_click=self.save_supplier
+        )
+
+        self.page.add(
+            ft.Column([
+                ft.Container(
+                    content=ft.Row([
+                        ft.Text(
+                            "Editar Proveedor" if self.edit_mode else "Nuevo Proveedor",
+                            size=20,
+                            weight=ft.FontWeight.BOLD
+                        ),
+                        ft.IconButton(
+                            icon=ft.icons.ARROW_BACK,
+                            tooltip="Volver",
+                            on_click=self.go_back
+                        )
+                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                    padding=10
+                ),
+                ft.Container(
+                    content=ft.Column([
+                        self.name_field,
+                        self.email_field,
+                        self.phone_field,
+                        self.address_field,
+                        ft.Row([
+                            self.cancel_button,
+                            self.save_button
+                        ], spacing=10)
+                    ]),
+                    padding=10
+                )
+            ])
+        )
+
+        if self.edit_mode:
+            self.load_supplier_data()
+
+    #! Carga la informacion del proveedor para editar
+    def load_supplier_data(self):
+        try:
+            supplier_id = self.page.client_storage.get("edit_supplier_id")
             if supplier_id:
-                supplier = supplier_service.get_supplier_by_id(supplier_id)
+                supplier = self.supplier_service.get_supplier_by_id(
+                    supplier_id)
                 if supplier:
-                    name_field.value = supplier.name
-                    email_field.value = supplier.email
-                    phone_field.value = supplier.phone
-                    address_field.value = supplier.address
-                    page.update()
+                    self.name_field.value = supplier.name
+                    self.email_field.value = supplier.email
+                    self.phone_field.value = supplier.phone
+                    self.address_field.value = supplier.address
+                    self.page.update()
+        except Exception as e:
+            show_error_message(
+                self.page, f"Error al cargar los datos del proveedor: {str(e)}")
 
-    def save_supplier(e):
-        """Guarda o actualiza el proveedor"""
+    #! Guarda la informacion
+    def save_supplier(self, e):
         try:
             if not all([
-                name_field.value,
-                email_field.value,
-                phone_field.value,
-                address_field.value
+                self.name_field.value,
+                self.email_field.value,
+                self.phone_field.value,
+                self.address_field.value
             ]):
-                show_error_message(page, "Por favor complete todos los campos")
+                show_error_message(
+                    self.page, "Por favor complete todos los campos")
                 return
 
             supplier_data = {
-                "name": name_field.value,
-                "email": email_field.value,
-                "phone": phone_field.value,
-                "address": address_field.value
+                "name": self.name_field.value,
+                "email": self.email_field.value,
+                "phone": self.phone_field.value,
+                "address": self.address_field.value
             }
 
-            if edit_mode:
-                supplier_id = page.client_storage.get("edit_supplier_id")
-                supplier_service.update_supplier(supplier_id, supplier_data)
+            if self.edit_mode:
+                supplier_id = self.page.client_storage.get("edit_supplier_id")
+                self.supplier_service.update_supplier(
+                    supplier_id, supplier_data)
                 message = "Proveedor actualizado exitosamente"
             else:
-                supplier_service.create_supplier(supplier_data)
+                self.supplier_service.create_supplier(supplier_data)
                 message = "Proveedor creado exitosamente"
 
-            show_success_message(page, message)
-            go_back(None)  # Volver a la lista después de guardar
+            show_success_message(self.page, message)
+            self.go_back(None)
 
-        except Exception as ex:
-            show_error_message(page, f"Error al guardar el proveedor: {str(ex)}")
+        except Exception as e:
+            show_error_message(
+                self.page, f"Error al guardar el proveedor: {str(e)}")
 
-    def go_back(e):
-        """Vuelve a la lista de proveedores"""
-        if edit_mode:
-            page.client_storage.remove("edit_supplier_id")
-        page.go("/ver_proveedores")
-
-    # Construir la interfaz
-    page.controls = [
-        ft.Column([
-            ft.Container(
-                content=ft.Row([
-                    ft.Text(
-                        "Editar Proveedor" if edit_mode else "Nuevo Proveedor",
-                        size=20,
-                        weight=ft.FontWeight.BOLD
-                    ),
-                    ft.IconButton(
-                        icon=ft.icons.ARROW_BACK,
-                        tooltip="Volver",
-                        on_click=go_back
-                    )
-                ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                padding=10
-            ),
-            ft.Container(
-                content=ft.Column([
-                    name_field,
-                    email_field,
-                    phone_field,
-                    address_field,
-                    ft.Row([
-                        ft.ElevatedButton(
-                            text="Cancelar",
-                            icon=ft.icons.CANCEL,
-                            on_click=go_back
-                        ),
-                        ft.ElevatedButton(
-                            text="Guardar",
-                            icon=ft.icons.SAVE,
-                            on_click=save_supplier
-                        ),
-                    ], spacing=10)
-                ]),
-                padding=10
-            )
-        ])
-    ]
-
-    # Si estamos en modo edición, cargar los datos del proveedor
-    if edit_mode:
-        load_supplier_data()
-
-    page.update()
+    #! Ir al inicio
+    def go_back(self, e):
+        if self.edit_mode:
+            self.page.client_storage.remove("edit_supplier_id")
+        self.page.go("/ver_proveedores")

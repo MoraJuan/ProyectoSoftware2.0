@@ -1,6 +1,3 @@
-"""
-Servicio para la gestión de proveedores
-"""
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from models.Supplier import Supplier

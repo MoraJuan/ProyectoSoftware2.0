@@ -1,59 +1,63 @@
-from flet import (Column, Container, ElevatedButton, FontWeight, IconButton,
-                  MainAxisAlignment, Page, Row, Text, TextButton, icons)
-
+import flet as ft
+from sqlalchemy.orm import Session
 from services.supplierService import SupplierService
-from ui.components.alerts import (create_alert_dialog, show_error_message,
-                                  show_success_message)
 from ui.components.data_table import DataTable
+from ui.components.alerts import show_success_message, show_error_message
 
+class PageSupplier:
+    def __init__(self, page: ft.Page, session: Session):
+        self.page = page
+        self.session = session
+        self.page.title = "Lista de Proveedores"
+        self.supplier_service = SupplierService(session)
+        self.build_ui()
 
-def PageSupplier(page: Page, session):
-    page.title = "Lista de Proveedores"
-    supplier_service = SupplierService(session)
+    def build_ui(self):
+        self.supplier_table = ft.Container()
+        self.load_suppliers()
 
-    def deleteSupplier(id):
-        print(id)
-
-    #!Carga los proveedores y los muestra en columnas
-    def loadSuppliersTable():
-        suppliers = supplier_service.get_all_suppliers()
-        suppliers_data = [
-            {
-                "ID": supplier.id,
-                "Nombre": supplier.name,
-                "Email": supplier.email,
-                "Teléfono": supplier.phone,
-                "Dirección": supplier.address,
-                "Elimar": IconButton(
-                    icon=icons.DELETE,
-                    tooltip=f"Eliminar {supplier.name}",
-                    on_click=lambda e, supplier_id=supplier.id: deleteSupplier(
-                        supplier_id),
-                    icon_size=30,
-                    icon_color="red"
-                )
-            }
-            for supplier in suppliers
-        ]
-
-        return DataTable(
-            columns=["ID", "Nombre", "Email",
-                     "Teléfono", "Dirección", "Eliminar"],
-            data=suppliers_data
+        self.home_button = ft.IconButton(
+            icon=ft.icons.HOME,
+            tooltip="Volver al inicio",
+            on_click=lambda e: self.page.go("/")
         )
 
-    #!Vista de la pestaña principal
-    suppliersTable = loadSuppliersTable()
-    page.add(
-        Container(
-            content=Column([
-                Column([Text("Proveedores")]),
-                IconButton(
-                    icon=icons.HOME,
-                    tooltip="Volver al inicio",
-                    on_click=lambda e: page.go("/")
-                ),
-                suppliersTable
-            ])
+        self.page.add(
+            ft.Container(
+                content=ft.Column([
+                    ft.Text("Proveedores", weight=ft.FontWeight.BOLD, size=20),
+                    self.home_button,
+                    self.supplier_table
+                ])
+            )
         )
-    )
+
+    def load_suppliers(self):
+        try:
+            suppliers = self.supplier_service.get_all_suppliers()
+            suppliers_data = [
+                {
+                    "ID": supplier.id,
+                    "Nombre": supplier.name,
+                    "Email": supplier.email,
+                    "Teléfono": supplier.phone,
+                    "Dirección": supplier.address,
+                    # "Eliminar": ft.IconButton(
+                    #     icon=ft.icons.DELETE,
+                    #     tooltip=f"Eliminar {supplier.name}",
+                    #     on_click=lambda e, supplier_id=supplier.id: self.delete_supplier(supplier_id),
+                    #     icon_size=30,
+                    #     icon_color="red"
+                    # )
+                }
+                for supplier in suppliers
+            ]
+
+            self.supplier_table.content = DataTable(
+                columns=["ID", "Nombre", "Email", "Teléfono", "Dirección"],
+                data=suppliers_data
+            )
+            self.page.update()
+
+        except Exception as e:
+            show_error_message(self.page, f"Error al cargar los proveedores: {str(e)}")

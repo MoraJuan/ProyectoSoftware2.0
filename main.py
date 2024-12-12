@@ -5,10 +5,6 @@ from flet import Container, Page, Text, alignment
 from database.connection import Base, SessionLocal, engine
 from pages import PageHome, PageProduct, PageSupplier, PageSupplierForm
 
-#! Base de datos
-#? from sqlalchemy.orm import sessionmaker
-#? from models import (Administrator, CommercialInvoice, Customer, Employee, Product, Stock, Supplier, User)
-
 # Crear todas las tablas en la base de datos
 Base.metadata.create_all(engine)
 
